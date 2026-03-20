@@ -1,4 +1,3 @@
-import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
 export interface AuthPayload {
@@ -7,13 +6,15 @@ export interface AuthPayload {
   exp: number;
 }
 
-export interface AuthenticatedRequest extends Request {
+export interface AuthenticatedRequest {
   user?: AuthPayload;
+  headers: any;
+  [key: string]: any;
 }
 
 const JWT_SECRET = process.env.JWT_SECRET || 'satsid-dev-secret-change-in-production-abc123';
 
-export function requireAuth(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
+export function requireAuth(req: any, res: any, next: any): void {
   try {
     const authHeader = req.headers.authorization;
 
