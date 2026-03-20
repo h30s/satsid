@@ -1,0 +1,37 @@
+[project]
+name = "satsid"
+description = "SatsID - Sybil-Resistant Identity Protocol on Bitcoin"
+authors = ["Himanshu Soni"]
+telemetry = false
+cache_dir = "./.cache"
+requirements = []
+
+[contracts.satsid-sbtc]
+path = "contracts/satsid-sbtc.clar"
+clarity_version = 2
+epoch = 2.5
+
+[contracts.satsid-usdcx]
+path = "contracts/satsid-usdcx.clar"
+clarity_version = 2
+epoch = 2.5
+
+[contracts.satsid-core]
+path = "contracts/satsid-core.clar"
+clarity_version = 2
+epoch = 2.5
+
+[contracts.satsid-stake]
+path = "contracts/satsid-stake.clar"
+clarity_version = 2
+epoch = 2.5
+depends_on = ["satsid-core", "satsid-sbtc"]
+
+[contracts.satsid-credentials]
+path = "contracts/satsid-credentials.clar"
+clarity_version = 2
+epoch = 2.5
+depends_on = ["satsid-core", "satsid-usdcx"]
+
+[repl.analysis]
+passes = ["check_checker"]

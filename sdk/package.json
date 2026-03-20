@@ -1,0 +1,21 @@
+{
+  "name": "@satsid/auth",
+  "version": "0.1.0",
+  "description": "SatsID Authentication SDK - Sign In with Bitcoin",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "@stacks/connect": "*",
+    "@stacks/transactions": "*",
+    "@stacks/network": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "@types/react": "^18.0.0"
+  }
+}

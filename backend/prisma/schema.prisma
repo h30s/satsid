@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  address   String
+  nonce     String   @unique
+  token     String?
+  isActive  Boolean  @default(true)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([address])
+  @@index([nonce])
+}
+
+model ReputationCache {
+  address         String   @id
+  totalScore      Float
+  baseScore       Float
+  walletAgeScore  Float
+  stakeScore      Float
+  durationScore   Float
+  activityScore   Float
+  credentialScore Float
+  challengeBonus  Float
+  tier            String
+  isSlashed       Boolean  @default(false)
+  lastComputedAt  DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([tier])
+  @@index([totalScore])
+}
+
+model PaymentRecord {
+  txId       String   @id
+  payer      String
+  amount     String
+  endpoint   String
+  targetAddr String
+  verifiedAt DateTime @default(now())
+
+  @@index([payer])
+  @@index([targetAddr])
+}
+
+model IdentityCache {
+  address         String   @id
+  displayName     String?
+  bio             String?
+  bnsName         String?
+  isVerified      Boolean  @default(false)
+  isRegistered    Boolean  @default(false)
+  stakeAmount     String?
+  credentialCount Int      @default(0)
+  lastSyncedAt    DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model VerificationLog {
+  id               String   @id @default(uuid())
+  verifierAddr     String
+  targetAddr       String
+  verificationType String
+  paymentTxId      String
+  createdAt        DateTime @default(now())
+
+  @@index([targetAddr])
+  @@index([createdAt])
+}
