@@ -1,10 +1,19 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { SATSID_CORE_CONTRACT, SATSID_STAKE_CONTRACT } from '../config/stacks';
 import { callReadOnly } from '../services/stacks.service';
+import { getPaymentCount } from '../services/payment.service';
+import { getVerificationCount } from './verify';
 
-const prisma = new PrismaClient();
 const router = Router();
+
+// In-memory set of known addresses (for leaderboard)
+const knownAddresses = new Set<string>();
+knownAddresses.add('ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM');
+
+/** Register an address as known (can be called from session/auth routes). */
+export function registerKnownAddress(address: string): void {
+  knownAddresses.add(address);
+}
 
 /**
  * GET /api/stats
@@ -15,7 +24,6 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
     // Try to fetch stats from contracts
     let totalIdentities = 0;
     let totalStaked = '0';
-    let totalCredentials = 0;
 
     try {
       const identityStats = await callReadOnly(
@@ -26,11 +34,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
       );
       totalIdentities = parseInt(identityStats?.value || '0');
     } catch {
-      // Fall back to cached data
-      const cachedCount = await prisma.identityCache.count({
-        where: { isRegistered: true },
-      });
-      totalIdentities = cachedCount;
+      totalIdentities = 0;
     }
 
     try {
@@ -42,24 +46,12 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
       );
       totalStaked = stakeStats?.value || '0';
     } catch {
-      // Use cached data
+      // Use default
     }
 
-    // Count verifications from the log
-    const totalVerifications = await prisma.verificationLog.count();
-
-    // Count credentials from cache
-    try {
-      const credStats = await prisma.identityCache.aggregate({
-        _sum: { credentialCount: true },
-      });
-      totalCredentials = credStats._sum.credentialCount || 0;
-    } catch {
-      totalCredentials = 0;
-    }
-
-    // Count payments processed
-    const totalPayments = await prisma.paymentRecord.count();
+    const totalVerifications = getVerificationCount();
+    const totalCredentials = 0; // No DB cache; on-chain data fetched per-request
+    const totalPayments = getPaymentCount();
 
     res.status(200).json({
       totalIdentities,
@@ -102,19 +94,6 @@ router.get('/leaderboard', async (req: Request, res: Response): Promise<void> =>
     } catch {
       totalCount = 1; // At least the deployer
     }
-
-    // Known registered addresses — in production this would come from event indexing
-    // For now, gather from sessions table + deployer
-    const knownAddresses = new Set<string>();
-    knownAddresses.add('ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM');
-
-    try {
-      const sessions = await prisma.session.findMany({
-        select: { address: true },
-        distinct: ['address'],
-      });
-      sessions.forEach((s: any) => knownAddresses.add(s.address));
-    } catch {}
 
     // Fetch on-chain data for each known address
     const leaderboard = [];

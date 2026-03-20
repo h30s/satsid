@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { generateNonce, verifySignature, createToken } from '../services/auth.service';
+import { generateNonce, verifySignatureAndCreateToken, verifyToken } from '../services/auth.service';
 import { getIdentity } from '../services/identity.service';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth';
 
@@ -62,18 +62,7 @@ router.post('/verify', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const verification = await verifySignature(address, signature, publicKey, nonce);
-
-    if (!verification.valid) {
-      res.status(401).json({
-        error: 'Authentication Failed',
-        message: verification.reason || 'Signature verification failed.',
-      });
-      return;
-    }
-
-    // Generate JWT
-    const token = await createToken(address);
+    const { token, expiresAt } = await verifySignatureAndCreateToken(address, signature, publicKey, nonce);
 
     // Fetch on-chain identity data
     let identity;

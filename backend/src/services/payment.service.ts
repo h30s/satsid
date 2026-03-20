@@ -1,7 +1,7 @@
-import { PrismaClient } from '@prisma/client';
 import { getTransactionInfo } from './stacks.service';
 
-const prisma = new PrismaClient();
+// In-memory storage for payment replay protection
+const usedPayments = new Map<string, { payer: string; amount: string; endpoint: string; targetAddr: string; usedAt: string }>();
 
 export interface PaymentVerification {
   valid: boolean;
@@ -117,10 +117,7 @@ export async function verifyPayment(
  * Check if a payment transaction has already been used (replay protection).
  */
 export async function isPaymentUsed(txId: string): Promise<boolean> {
-  const record = await prisma.paymentRecord.findUnique({
-    where: { txId },
-  });
-  return record !== null;
+  return usedPayments.has(txId);
 }
 
 /**
@@ -133,13 +130,18 @@ export async function recordPayment(
   endpoint: string,
   targetAddr: string
 ): Promise<void> {
-  await prisma.paymentRecord.create({
-    data: {
-      txId,
-      payer,
-      amount,
-      endpoint,
-      targetAddr,
-    },
+  usedPayments.set(txId, {
+    payer,
+    amount,
+    endpoint,
+    targetAddr,
+    usedAt: new Date().toISOString(),
   });
+}
+
+/**
+ * Get total number of recorded payments (for stats).
+ */
+export function getPaymentCount(): number {
+  return usedPayments.size;
 }

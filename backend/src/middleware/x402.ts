@@ -1,8 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { verifyPayment, isPaymentUsed, recordPayment } from '../services/payment.service';
-
-const prisma = new PrismaClient();
 
 const X402_BYPASS_MODE = process.env.X402_BYPASS_MODE === 'true';
 const X402_BYPASS_TOKEN = process.env.X402_BYPASS_TOKEN || 'test-payment-token-dev';

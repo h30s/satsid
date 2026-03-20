@@ -10,10 +10,16 @@ import {
   getAccountTransactions,
   getCurrentBlockHeight,
 } from '../services/stacks.service';
-import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+// In-memory verification log (non-critical, just for stats)
+const verificationLog: Array<{ verifierAddr: string; targetAddr: string; verificationType: string; paymentTxId: string; timestamp: string }> = [];
+
 const router = Router();
+
+/** Get the total number of verifications (for stats). */
+export function getVerificationCount(): number {
+  return verificationLog.length;
+}
 
 /**
  * GET /api/verify/:address
@@ -67,17 +73,16 @@ router.get(
 
       const reputation = computeReputation(input);
 
-      // Log the verification
+      // Log the verification (in-memory, non-critical)
       const paymentTxId = (req.headers['x-payment-token'] as string) || 'bypass';
       const verifierAddr = (req as any).user?.address || 'anonymous';
-      await prisma.verificationLog.create({
-        data: {
-          verifierAddr,
-          targetAddr: address,
-          verificationType: 'full',
-          paymentTxId,
-        },
-      }).catch(() => {}); // Non-critical
+      verificationLog.push({
+        verifierAddr,
+        targetAddr: address,
+        verificationType: 'full',
+        paymentTxId,
+        timestamp: new Date().toISOString(),
+      });
 
       identity.stakeAmount = stakeInfo.amount;
 
@@ -130,16 +135,15 @@ router.get(
         return;
       }
 
-      // Log the verification
+      // Log the verification (in-memory, non-critical)
       const paymentTxId = (req.headers['x-payment-token'] as string) || 'bypass';
-      await prisma.verificationLog.create({
-        data: {
-          verifierAddr: (req as any).user?.address || 'anonymous',
-          targetAddr: address,
-          verificationType: 'credential',
-          paymentTxId,
-        },
-      }).catch(() => {});
+      verificationLog.push({
+        verifierAddr: (req as any).user?.address || 'anonymous',
+        targetAddr: address,
+        verificationType: 'credential',
+        paymentTxId,
+        timestamp: new Date().toISOString(),
+      });
 
       res.status(200).json({
         verified: true,
@@ -190,16 +194,15 @@ router.get(
         stakeInfo.isActive &&
         reputation.totalScore >= 20;
 
-      // Log the verification
+      // Log the verification (in-memory, non-critical)
       const paymentTxId = (req.headers['x-payment-token'] as string) || 'bypass';
-      await prisma.verificationLog.create({
-        data: {
-          verifierAddr: (req as any).user?.address || 'anonymous',
-          targetAddr: address,
-          verificationType: 'human',
-          paymentTxId,
-        },
-      }).catch(() => {});
+      verificationLog.push({
+        verifierAddr: (req as any).user?.address || 'anonymous',
+        targetAddr: address,
+        verificationType: 'human',
+        paymentTxId,
+        timestamp: new Date().toISOString(),
+      });
 
       res.status(200).json({
         isVerifiedHuman,
