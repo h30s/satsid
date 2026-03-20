@@ -40,10 +40,11 @@ export function StacksProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const connectWallet = useCallback(() => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
     showConnect({
       appDetails: {
         name: APP_NAME,
-        icon: "/icon.png",
+        icon: `${origin}/icon.png`,
       },
       onFinish: () => {
         if (userSession.isUserSignedIn()) {
